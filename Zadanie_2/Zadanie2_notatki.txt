@@ -1,0 +1,18 @@
+1. Uruchomienie skryptu:
+   python3 append_lines.py argument.txt
+
+2. Obserwacja dopisywania:
+   tail -f argument.txt
+
+3. Usuwanie pliku z drugiego terminala:
+   rm argument.txt
+
+4. Bezinwazyjne odzyskanie zawartości:
+   -  Wyświetlanie PID procesu:
+      pgrep -f append_lines.py
+
+   -  Wyświetlanie deskryptorów:
+      ls -l /proc/<PID>/fd
+
+   -  Skopiowanie zawartości deskryptora i zapisanie w nowym pliku:
+      cp /proc/<PID>/fd/<FD> ~/recovered_argument.txt
