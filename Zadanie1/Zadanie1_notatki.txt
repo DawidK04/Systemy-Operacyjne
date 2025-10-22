@@ -1,0 +1,13 @@
+1. Uruchomienie w terminalu:
+
+   /usr/bin/time -v /bin/ps -eo user,pid,comm 2> ps_time.txt
+
+   /usr/bin/time -v python3 proc_script.py 2> py_time.txt
+
+2. Odczytując z plików ps_time.txt i py_time.txt linię "Maximum resident set size" dało mi następujące wyniki:
+
+   ps_time.txt = 4500 kB
+
+   py_time.txt = 10052 kB
+
+   Python używał o 123,37% więcej pamięci niż systemowy ps
