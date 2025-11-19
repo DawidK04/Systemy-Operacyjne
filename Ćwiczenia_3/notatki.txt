@@ -1,0 +1,84 @@
+1. Utwórz katalog lab w swoim katalogu domowym.
+
+mkdir lab
+
+2. Wyświetl prawa dostepu do katalogu lab.
+
+ls -l lab
+
+3. Nadaj uprawnienia odczytu i wejścia do katalogu dla grupy i usuń uprawnienia dla pozostałych użytkowników (jednym poleceniem).
+
+chmod g+rx,o-rwx lab
+
+4. Zapisz szczegółową zawartość katalogu /boot do pliku lab/boot.txt.
+
+ls -l /boot > lab/boot.txt
+
+5. W katalogu lab utwórz jednym poleceniem strukturę katalogów dir1/dir2/dir3.
+
+mkdir -p lab/dir1/dir2/dir3
+
+6. Będąc w katalogu lab/dir1/dir2/ wyświetl zawartość pliku lab/boot.txt korzystając ze ścieżki relatywnej.
+
+cd lab/dir1/dir2/
+cat ../../boot.txt
+
+7. Utwórz puste pliki tekst1.txt, tekst2.txt, tekst3.txt w katalogu lab.
+
+touch lab/tekst1.txt lab/tekst2.txt lab/tekst3.txt
+
+8. Skopiuj pliki tekst1.txt, tekst2.txt, tekst3.txt do katalogu lab/dir1/dir2/dir3/ (jednym poleceniem).
+
+cp lab/tekst1.txt lab/tekst2.txt lab/tekst3.txt lab/dir1/dir2/dir3/
+
+9. Utwórz ukryty plik o dowolnej nazwie w katalogu lab.
+
+touch lab/.1
+
+10. Zmień nazwę dowolnego pliku w katalogu lab/dir1/dir2/dir3.
+
+mv lab/dir1/dir2/dir3/tekst1.txt lab/dir1/dir2/dir3/nazwa.txt
+
+11. Zapisz zawartość /proc/meminfo do pliku lab/tekst1.txt.
+
+cat /proc/meminfo > lab/tekst1.txt
+
+12. Dodaj zawartość /proc/cpuinfo do pliku lab/tekst1.txt.
+
+cat /proc/cpuinfo >> lab/tekst1.txt
+
+13. Zapisz kto jest zalogowany obecnie w systemie do pliku lab/tekst2.txt.
+
+who > lab/tekst2.txt
+
+14. Znajdź wszystkie katalogi o nazwie share, które znajdują się w /.
+
+find / -type d -name "share"
+
+15. Znajdź wszystkie pliki, które są większe niż 5 MB w katalogu /usr/bin.
+
+find /usr/bin -type f -size +5M
+
+16. Skopiuj wszystkie pliki zwykłe o rozmiarze pomiędzy 300 i 500 bajtów z katalogu /usr/bin do katalogu lab.
+
+find /usr/bin -type f -size +299c -size -501c -exec cp {} lab/ \;
+
+17. Utwórz dowiązanie twarde do pliku lab/tekst2.txt o nazwie lab/TEKST2.TXT.
+
+ln lab/tekst2.txt lab/TEKST2.TXT
+
+18. Utwórz dowiązanie symboliczne do pliku lab/tekst2.txt o nazwie lab/Tekst2.txt.
+
+ln -s lab/tekst2.txt lab/Tekst2.txt
+
+19. Wyświetl wszystkie elementy z katalogu lab wraz z ukrytymi plikami.
+
+ls -a lab
+
+20. Wyświetl pliki które mają w nazwie słowo ,,tty’’ z katalogu /dev/, korzystając z polecenia ls oraz grep.
+
+ls /dev/ | grep "tty"
+
+21. Korzystając z man na temat polecenia ls, znajdź sposób na wyświetlenie zawartości folderu lab wraz z podfolderami.
+
+ls -R lab
