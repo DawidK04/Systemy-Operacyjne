@@ -1,0 +1,35 @@
+1.Podaj polecenia, które:
+
+- nadpisują określony tekst do pliku bez użycia edytora. 
+
+echo "tekst" > plik.txt
+
+- dodają określony tekst na koniec pliku bez użycia edytora. 
+
+echo "tekst" >> plik.txt
+
+2. Wymień skrót, który komentuje lub usuwa komentarz linii w nano. 
+
+Alt 3
+
+3. Wymień skróty, który dodają i odejmują wcięcie do bieżącej linii w nano.
+
+Dodaje wcięcie - Alt + }
+
+Usuwa wcięcie - Alt + {
+
+4. Podaj nazwę pliku konfiguracyjnego nano i treść, która umożliwi, aby tabulatory były automatycznie zamieniane na spacje (za każdym uruchomieniem).
+
+.nanorc
+
+set tabstospaces
+
+5. Podaj nazwę pliku konfiguracyjnego vim i treść, która umożliwi, aby tabulatory były automatycznie zamieniane na spacje (za każdym uruchomieniem).
+
+.vimrc
+
+set expandtab
+set tabstop=4
+set shiftwidth=4
+
+
