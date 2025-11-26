@@ -1,0 +1,41 @@
+1. Wypisz nagłówek (pierwszą linię) z iris.csv.
+
+	head -n 1 iris.csv
+
+2. Wypisz wszystkie linie oprócz pierwszej z iris.csv (podpowiedź: skorzystaj z man tail).
+
+	tail -n +2 iris.csv
+
+3. Zamień gatunki na liczby (wyświetl poprawione linie, nie zmieniaj treści pliku):
+
+	LC_ALL=C awk 'NR==1{print $0; next}{gsub(/Setosa/, "1"); gsub(/Versicolor/, "2"); gsub(/Virginica/, "3"); print}' iris.csv
+
+4. Wypisz dostępne rodzaje irysów bez powtórzeń i bez cudzysłowów.
+
+	LC_ALL=C awk -F, 'NR>1 {gsub(/"/,"",$5); print $5}' iris.csv | sort -u
+
+5. Oblicz sumę wartości dla każdego wiersza.
+
+	LC_NUMERIC=C awk -F, 'NR>1 {print $1 + $2 + $3 + $4}' iris.csv
+
+6. Oblicz średnią wartość drugiej kolumny (sepal.width).
+
+	LC_NUMERIC=C awk -F, 'NR>1 {s += $2; c++} END {print s/c}' iris.csv
+
+7. Wypisz całą linię, która ma maksymalną wartość czwartej kolumny (petal.width).
+
+	LC_NUMERIC=C awk -F, 'NR==2 {max=$4; line=$0} NR>2 {if($4>max) {max=$4; line=$0}} END {print line}' iris.csv
+
+8. Wypisz nazwę gatunku Irysa, którego pierwsza kolumna (sepal.length) jest większa niż 7.
+
+	LC_ALL=C awk -F, 'NR>1 && $1>7 {gsub(/"/,"",$5); print $5}' iris.csv
+
+9. Przeformatuj plik CSV korzystając z printf w awk na pola oddzielone tabulatorami obcinając liczby do całkowitych.
+
+	LC_ALL=C awk -F, 'NR>1 {printf("%d\t%d\t%d\t%d\t%s\n", $1, $2, $3, $4, $5)}' iris.csv
+
+10. Zmień losowo kolejność wierszy z danymi o irysach i zapisz je w nowym pliku CSV z nagłówkiem.
+
+	head -n 1 iris.csv > new_iris.csv
+
+	tail -n +2 iris.csv | shuf >> new_iris.csv
