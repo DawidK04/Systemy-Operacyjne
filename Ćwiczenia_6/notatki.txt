@@ -28,7 +28,7 @@
 
 8. Wypisz nazwę gatunku Irysa, którego pierwsza kolumna (sepal.length) jest większa niż 7.
 
-	LC_ALL=C awk -F, 'NR>1 && $1>7 {gsub(/"/,"",$5); print $5}' iris.csv
+	LC_ALL=C awk -F, 'NR>1 && $1>7 {gsub(/"/,"",$5); print $5}' iris.csv | sort -u
 
 9. Przeformatuj plik CSV korzystając z printf w awk na pola oddzielone tabulatorami obcinając liczby do całkowitych.
 
@@ -39,3 +39,4 @@
 	head -n 1 iris.csv > new_iris.csv
 
 	tail -n +2 iris.csv | shuf >> new_iris.csv
+
