@@ -133,7 +133,6 @@ function main() {
         for key in "${ALL_KEYS[@]}"; do
             ${INFO_MAP[${key}]}
         done
-        echo "Pamięć RAM: $(get_ram_info | sed 's/RAM: //') (użyta / całkowita (% ile użyte))"
         return
     fi
 
