@@ -2,17 +2,17 @@
 
 
 function list_top_cpu() {
-    echo "--- Top 5 procesów wg użycia CPU ---"
+    echo "Top 5 procesów wg użycia CPU"
     ps aux --sort=-%cpu | head -n 6
 }
 
 function list_top_mem() {
-    echo "--- Top 5 procesów wg użycia pamięci ---"
+    echo "Top 5 procesów wg użycia pamięci"
     ps aux --sort=-%mem | head -n 6
 }
 
 function show_process_tree() {
-    echo "--- Drzewo procesów ---"
+    echo "Drzewo procesów"
     pstree -p
 }
 
