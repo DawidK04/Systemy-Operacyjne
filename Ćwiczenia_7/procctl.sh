@@ -62,7 +62,7 @@ function kill_by_pid() {
 function kill_by_name() {
     read -p "Podaj nazwę procesu do zabicia: " name
     
-    if pkill -15 "$name" 2>/dev/null; then
+    if kill -15 "$name" 2>/dev/null; then
         echo "Wysłano sygnał do wszystkich procesów o nazwie '$name'."
     else
         echo "Błąd: Nie znaleziono procesów o nazwie '$name' lub brak uprawnień."
