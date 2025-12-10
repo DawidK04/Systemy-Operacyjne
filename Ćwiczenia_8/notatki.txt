@@ -1,0 +1,3 @@
+cd /tmp/data/various/ ; for file in *.zip; do unzip "$file" -d .; done
+rm *.zip
+./compr-bench /tmp/data/random /tmp/data/empty /tmp/data/various
