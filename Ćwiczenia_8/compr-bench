@@ -1,129 +1,179 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -u
+trap 'cleanup_tmpdir' EXIT
 
-measure_time() {
-    local start
-    local end
-    local result
-    start=$(date +%s.%N)
-    "$@"
-    end=$(date +%s.%N)
-    result=$(echo "scale=10; $end - $start" | bc -l)
-    echo "$result"
+TMP_DIR=""
+cleanup_tmpdir() {
+  if [ -n "${TMP_DIR:-}" ] && [ -d "$TMP_DIR" ]; then
+    rm -rf "$TMP_DIR"
+  fi
 }
 
-cleanup() {
-    local tmp_dir=$1
-    rm -rf "$tmp_dir"
-    echo "Usuwanie katalogu tymczasowego: $tmp_dir"
-}
-
-if [ $# -eq 0 ]; then
-    echo "Użycie: $0 <katalog1> [<katalog2> ...]"
-    exit 1
+required=(tar date bc stat)
+compressors=(gzip bzip2 xz zstd lz4 7z)
+missing=()
+for cmd in "${required[@]}"; do
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    missing+=("$cmd")
+  fi
+done
+for cmd in "${compressors[@]}"; do
+  if ! command -v "$cmd" >/dev/null 2>&1; then
+    echo "Uwaga: nie znaleziono '$cmd' - testy dla tego programu zostaną pominięte." >&2
+  fi
+done
+if [ "${#missing[@]}" -ne 0 ]; then
+  echo "Brakuje narzędzi wymaganych do działania skryptu: ${missing[*]}" >&2
+  exit 1
 fi
 
-COMPRESSORS=(
-    "gzip|-f|-d -f|.gz"
-    "bzip2|-f|-d -f|.bz2"
-    "xz||-d|.xz"
-    "zstd||-d|.zst"
-    "lz4||-d|.lz4"
-    "7z|a -mmt=off -t7z|e|.7z"
-)
+time_now() { date +%s.%N; }
+time_diff() {
+  echo "$(echo "$2 - $1" | bc -l)"
+}
+ratio_pct() {
+  local comp=$1 orig=$2
+  if [ "$orig" -eq 0 ]; then
+    echo "0.00"
+  else
+    echo "$(echo "scale=4; $comp * 100 / $orig" | bc -l)"
+  fi
+}
 
-HEADER="name\tcompress\tdecompress\tratio"
+run_algo() {
+  local algo=$1
+  local tarfile=$2
+  local tmp=$3
+  local compfile extracted start end ctime dtime orig_size comp_size ratio
 
-for DATA_DIR in "$@"; do
-    if [ ! -d "$DATA_DIR" ]; then
-        echo "Katalog nie istnieje lub nie jest katalogiem: $DATA_DIR" >&2
-        continue
+  orig_size=$(stat -c%s "$tarfile")
+
+  case "$algo" in
+    gzip)
+      compfile="$tmp/archive.tar.gz"
+      start=$(time_now)
+      gzip -c "$tarfile" > "$compfile"
+      end=$(time_now)
+      ctime=$(time_diff "$start" "$end")
+
+      start=$(time_now)
+      gzip -d -c "$compfile" > "$tmp/extracted.tar"
+      end=$(time_now)
+      dtime=$(time_diff "$start" "$end")
+      ;;
+    bzip2)
+      compfile="$tmp/archive.tar.bz2"
+      start=$(time_now)
+      bzip2 -c "$tarfile" > "$compfile"
+      end=$(time_now)
+      ctime=$(time_diff "$start" "$end")
+
+      start=$(time_now)
+      bzip2 -d -c "$compfile" > "$tmp/extracted.tar"
+      end=$(time_now)
+      dtime=$(time_diff "$start" "$end")
+      ;;
+    xz)
+      compfile="$tmp/archive.tar.xz"
+      start=$(time_now)
+      xz -c "$tarfile" > "$compfile"
+      end=$(time_now)
+      ctime=$(time_diff "$start" "$end")
+
+      start=$(time_now)
+      xz -d -c "$compfile" > "$tmp/extracted.tar"
+      end=$(time_now)
+      dtime=$(time_diff "$start" "$end")
+      ;;
+    zstd)
+      compfile="$tmp/archive.tar.zst"
+      start=$(time_now)
+      zstd -q -c "$tarfile" > "$compfile"
+      end=$(time_now)
+      ctime=$(time_diff "$start" "$end")
+
+      start=$(time_now)
+      zstd -q -d -c "$compfile" > "$tmp/extracted.tar"
+      end=$(time_now)
+      dtime=$(time_diff "$start" "$end")
+      ;;
+    lz4)
+      compfile="$tmp/archive.tar.lz4"
+      start=$(time_now)
+      lz4 -c "$tarfile" > "$compfile"
+      end=$(time_now)
+      ctime=$(time_diff "$start" "$end")
+
+      start=$(time_now)
+      lz4 -d -c "$compfile" > "$tmp/extracted.tar"
+      end=$(time_now)
+      dtime=$(time_diff "$start" "$end")
+      ;;
+    7z)
+      compfile="$tmp/archive.tar.7z"
+      start=$(time_now)
+      7z a -bd -y "$compfile" "$tarfile" >/dev/null 2>&1
+      end=$(time_now)
+      ctime=$(time_diff "$start" "$end")
+
+      start=$(time_now)
+      7z x -so "$compfile" > "$tmp/extracted.tar" 2>/dev/null
+      end=$(time_now)
+      dtime=$(time_diff "$start" "$end")
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+
+  if [ -f "$compfile" ]; then
+    comp_size=$(stat -c%s "$compfile")
+  else
+    comp_size=0
+  fi
+
+  ratio=$(ratio_pct "$comp_size" "$orig_size")
+  printf "%s\t%s\t%s\t%s%%\n" "$algo" "$ctime" "$dtime" "$ratio"
+
+  rm -f "$compfile" "$tmp/extracted.tar"
+}
+
+algos=(gzip bzip2 xz zstd lz4 7z)
+
+if [ "$#" -lt 1 ]; then
+  echo "Usage: $0 <dir1> [dir2 ...]" >&2
+  exit 2
+fi
+
+TMP_DIR=$(mktemp -d)
+for dir in "$@"; do
+  if [ ! -d "$dir" ]; then
+    echo "Pominięto: '$dir' - nie istnieje lub nie jest katalogiem." >&2
+    continue
+  fi
+
+  printf "%s\n" "$dir"
+  printf "name\tcompress\tdecompress\tratio\n"
+
+  tarfile="$TMP_DIR/archive.tar"
+  ( cd "$dir" && tar cvf "$tarfile" . ) >/dev/null 2>&1
+
+  if [ ! -f "$tarfile" ]; then
+    echo "Błąd: nie udało się utworzyć tar dla $dir" >&2
+    continue
+  fi
+
+  for a in "${algos[@]}"; do
+    if command -v "$a" >/dev/null 2>&1; then
+      run_algo "$a" "$tarfile" "$TMP_DIR"
+    else
+      printf "%s\t%s\t%s\t%s\n" "$a" "N/A" "N/A" "N/A"
     fi
+  done
 
-    tmp_dir=$(mktemp -d)
-    echo ""
-    echo "$DATA_DIR"
-    echo -e "$HEADER"
+  rm -f "$tarfile"
 
-    BASE_NAME=$(basename "$DATA_DIR")
-    MASTER_TAR_FILE="$tmp_dir/$BASE_NAME.master.tar"
-    
-    if ! tar cvf "$MASTER_TAR_FILE" -C "$(dirname "$DATA_DIR")" "$BASE_NAME" > /dev/null 2>&1; then
-        echo "Błąd tworzenia archiwum tar dla $DATA_DIR" >&2
-        cleanup "$tmp_dir"
-        continue
-    fi
-    
-    ORIGINAL_SIZE=$(stat -c %s "$MASTER_TAR_FILE")
-
-    for COMPRESSOR in "${COMPRESSORS[@]}"; do
-        IFS='|' read -r NAME COMPRESS_OPTS DECOMPRESS_OPTS EXTENSION <<< "$COMPRESSOR"
-        
-        CURRENT_TAR_FILE="$tmp_dir/$NAME.$BASE_NAME.tar"
-        
-        cp "$MASTER_TAR_FILE" "$CURRENT_TAR_FILE"
-
-        if [ "$NAME" = "7z" ]; then
-            COMPRESSED_FILE="$tmp_dir/$BASE_NAME.7z"
-            COMPRESS_CMD="$NAME $COMPRESS_OPTS $COMPRESSED_FILE $CURRENT_TAR_FILE"
-        else
-            COMPRESSED_FILE="$CURRENT_TAR_FILE$EXTENSION"
-            COMPRESS_CMD="$NAME $COMPRESS_OPTS $CURRENT_TAR_FILE"
-        fi
-
-        COMPRESS_TIME=$(measure_time eval "$COMPRESS_CMD > /dev/null 2>&1")
-        
-        if [ $? -ne 0 ]; then
-            echo -e "$NAME\tBłąd kompresji\t-\t-"
-            rm -f "$CURRENT_TAR_FILE" "$COMPRESSED_FILE"
-            continue
-        fi
-
-        if [ -f "$COMPRESSED_FILE" ]; then
-            COMPRESSED_SIZE=$(stat -c %s "$COMPRESSED_FILE")
-            RATIO=$(echo "scale=1; ($COMPRESSED_SIZE * 100) / $ORIGINAL_SIZE" | bc -l)
-        else
-            echo -e "$NAME\t$COMPRESS_TIME\t-\tBłąd pliku"
-            continue
-        fi
-
-        DECOMPRESS_SUCCESS=false
-
-        if [ "$NAME" = "7z" ]; then
-            cp "$COMPRESSED_FILE" "$COMPRESSED_FILE.tmp"
-            DECOMPRESS_CMD="$NAME $DECOMPRESS_OPTS $COMPRESSED_FILE.tmp -o$tmp_dir"
-            DECOMPRESS_TIME=$(measure_time $DECOMPRESS_CMD > /dev/null 2>&1)
-            
-            if [ -f "$MASTER_TAR_FILE" ]; then 
-                 DECOMPRESSED_TAR_FILE="$tmp_dir/$NAME.$BASE_NAME.decompress.tar"
-                 rm -f "$MASTER_TAR_FILE"
-                 
-                 if [ $? -eq 0 ]; then
-                     DECOMPRESS_SUCCESS=true
-                 fi
-                 
-            fi
-            rm -f "$COMPRESSED_FILE.tmp"
-            
-        else
-            DECOMPRESS_CMD="$NAME $DECOMPRESS_OPTS $COMPRESSED_FILE"
-            DECOMPRESS_TIME=$(measure_time $DECOMPRESS_CMD > /dev/null 2>&1)
-            
-            if [ -f "$CURRENT_TAR_FILE" ]; then
-                DECOMPRESS_SUCCESS=true
-            fi
-        fi
-
-        if [ "$DECOMPRESS_SUCCESS" = true ]; then
-            echo -e "$NAME\t$COMPRESS_TIME\t$DECOMPRESS_TIME\t$RATIO%"
-        else
-             echo -e "$NAME\t$COMPRESS_TIME\tBłąd dekompresji\t$RATIO%"
-        fi
-        
-        rm -f "$COMPRESSED_FILE" "$CURRENT_TAR_FILE"
-
-    done
-    
-    rm -f "$MASTER_TAR_FILE"
-    cleanup "$tmp_dir"
-
+  printf "\n"
 done
+
+exit 0
