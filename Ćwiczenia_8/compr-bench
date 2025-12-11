@@ -17,10 +17,7 @@ for cmd in "${required[@]}"; do
     missing+=("$cmd")
   fi
 done
-for cmd in "${compressors[@]}"; do
-  if ! command -v "$cmd" >/dev/null 2>&1; then
-  fi
-done
+
 if [ "${#missing[@]}" -ne 0 ]; then
   exit 1
 fi
