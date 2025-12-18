@@ -69,7 +69,6 @@ def read_processes_from_csv(path):
 
 def main():
     if len(sys.argv) != 3:
-        print("Usage: ./rr.py file.csv quantum")
         sys.exit(1)
 
     csv_path = sys.argv[1]
