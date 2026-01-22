@@ -107,4 +107,4 @@ if __name__ == "__main__":
     b.free(a3[0])
     print("Po free(a3):", b.dump_free_lists())
     b.free(a2[0])
-    print("Po free(a2) (powinno być scalenie do jednego dużego):", b.dump_free_lists())
+    print("Po free(a2):", b.dump_free_lists())
